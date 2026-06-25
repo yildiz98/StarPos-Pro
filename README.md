@@ -1,16 +1,23 @@
-# ⭐ StarPOS Web v1 Demo
+# ⭐ StarPOS ERP v1.0 Demo
 
-Masaüstü / web panel odaklı POS, barkod, stok ve fiyat etiketi demo sistemi.
+Web odaklı POS + ERP demo sürümü.
 
-## Özellikler
-- Sol menülü web dashboard
-- Barkod / USB / Bluetooth okuyucu mantığı
-- Kamera alanı demo desteği
-- Ürün ekleme ve ürün tablosu
-- Stok ve kritik stok takibi
-- Satış sepeti ve stoktan düşme
-- Fiyat etiketi önizleme ve yazdırma
-- LocalStorage demo veritabanı
+## Modüller
+- POS Satış
+- Stok Takibi
+- Barkod Okutma
+- Fiyat Etiketi Yazdırma
+- Cari Hesap
+- Satın Alma
+- Tedarikçi
+- Depo Yönetimi
+- Kasa
+- Personel
+- Raporlar
+- Ayarlar / Yedekleme
 
-## GitHub Pages
-Dosyaları repository kök dizinine yükleyip Settings > Pages > main / root seçin.
+## Kurulum
+Dosyaları GitHub repository içine yükle. GitHub Pages: `Settings > Pages > main / root`.
+
+## Not
+Bu sürüm demo olarak localStorage kullanır. Firebase entegrasyonuna hazırdır.

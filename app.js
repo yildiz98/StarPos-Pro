@@ -1,111 +1,67 @@
-const LS_PRODUCTS='starpos_products_v2_web';
-const LS_SALES='starpos_sales_v2_web';
-let cart=[];
-const money=n=>'₺'+Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const products=()=>JSON.parse(localStorage.getItem(LS_PRODUCTS)||'[]');
-const saveProducts=a=>localStorage.setItem(LS_PRODUCTS,JSON.stringify(a));
-const sales=()=>JSON.parse(localStorage.getItem(LS_SALES)||'[]');
-const saveSales=a=>localStorage.setItem(LS_SALES,JSON.stringify(a));
+const menuGroups = [
+  ['GENEL', [['dashboard','🏠','Dashboard'],['pos','🛒','POS Satış']]],
+  ['ÜRÜN & STOK', [['products','📦','Ürünler'],['stock','📊','Stok'],['barcode','🏷️','Barkod / Etiket'],['warehouse','🏬','Depo Yönetimi']]],
+  ['TİCARİ', [['current','👥','Cari Hesap'],['purchase','🧾','Satın Alma'],['suppliers','🚚','Tedarikçiler'],['cash','💵','Kasa']]],
+  ['YÖNETİM', [['staff','👤','Personel'],['reports','📈','Raporlar'],['settings','⚙️','Ayarlar']]]
+];
 
-function seed(){
-  if(!products().length){
-    saveProducts([
-      {id:crypto.randomUUID(),name:'Coca Cola 330 ml',barcode:'8690637891234',buy:15,sell:25,stock:48,min:10},
-      {id:crypto.randomUUID(),name:'Saka Su 1.5 L',barcode:'8690749100012',buy:5,sell:10,stock:72,min:15},
-      {id:crypto.randomUUID(),name:'Ülker Çikolata 80 gr',barcode:'8690504021336',buy:18,sell:28,stock:36,min:8},
-      {id:crypto.randomUUID(),name:'Türk Kahvesi 100 gr',barcode:'8691111000123',buy:52,sell:75,stock:8,min:10}
-    ]);
-  }
-}
-
-function render(){
-  const ps=products(), ss=sales();
-  const totalSales=ss.reduce((t,s)=>t+Number(s.total||0),0);
-  document.getElementById('productCount').textContent=ps.length;
-  document.getElementById('lowStock').textContent=ps.filter(p=>Number(p.stock)<=Number(p.min)).length;
-  document.getElementById('saleCount').textContent=ss.length;
-  document.getElementById('dailyTotal').textContent=money(totalSales);
-
-  document.getElementById('productList').innerHTML = tableHtml(ps);
-  document.getElementById('stockTable').innerHTML = stockHtml(ps);
-  document.getElementById('quickProducts').innerHTML = ps.map(p=>`<div class="quick-card" onclick="addByBarcode('${p.barcode}')"><b>${p.name}</b><small>${p.barcode}</small><b>${money(p.sell)}</b></div>`).join('');
-
-  const sel=document.getElementById('labelProduct');
-  const selected=sel.value;
-  sel.innerHTML='<option value="">Ürün seçiniz</option>'+ps.map(p=>`<option value="${p.id}">${p.name} - ${money(p.sell)}</option>`).join('');
-  sel.value=selected;
-
-  document.getElementById('lastOps').innerHTML=ss.length?ss.slice(-8).reverse().map(s=>`<div class="cartitem"><div><b>${s.date}</b><br><small>${s.items?.length||0} ürün</small></div><b>${money(s.total)}</b></div>`).join(''):'Henüz işlem yok';
-  const critical=ps.filter(p=>Number(p.stock)<=Number(p.min));
-  document.getElementById('criticalList').innerHTML=critical.length?critical.map(p=>`<div class="cartitem"><div><b>${p.name}</b><br><small>Min: ${p.min}</small></div><b class="stock-low">${p.stock}</b></div>`).join(''):'Kritik ürün yok';
-  document.getElementById('reportBox').innerHTML=`<div class="cartitem"><span>Toplam Ciro</span><b>${money(totalSales)}</b></div><div class="cartitem"><span>Kayıtlı Ürün</span><b>${ps.length}</b></div><div class="cartitem"><span>Toplam Stok Adedi</span><b>${ps.reduce((t,p)=>t+Number(p.stock||0),0)}</b></div>`;
-  renderCart();
-}
-function tableHtml(ps){
-  if(!ps.length) return '<div class="empty">Ürün yok</div>';
-  return `<table class="table"><thead><tr><th>Ürün</th><th>Barkod</th><th>Alış</th><th>Satış</th><th>Stok</th><th>Kritik</th></tr></thead><tbody>${ps.map(p=>`<tr><td><b>${p.name}</b></td><td>${p.barcode}</td><td>${money(p.buy)}</td><td><b>${money(p.sell)}</b></td><td class="${Number(p.stock)<=Number(p.min)?'stock-low':''}">${p.stock}</td><td>${p.min}</td></tr>`).join('')}</tbody></table>`;
-}
-function stockHtml(ps){
-  if(!ps.length) return '<div class="empty">Stok kaydı yok</div>';
-  return `<table class="table"><thead><tr><th>Ürün</th><th>Barkod</th><th>Mevcut Stok</th><th>Kritik Stok</th><th>Durum</th></tr></thead><tbody>${ps.map(p=>`<tr><td>${p.name}</td><td>${p.barcode}</td><td>${p.stock}</td><td>${p.min}</td><td>${Number(p.stock)<=Number(p.min)?'<span class="stock-low">Düşük Stok</span>':'Yeterli'}</td></tr>`).join('')}</tbody></table>`;
-}
-function renderCart(){
-  document.getElementById('cartList').innerHTML=cart.length?cart.map((i,idx)=>`<div class="cartitem"><div><b>${i.name}</b><br><small>${i.barcode} x ${i.qty}</small></div><div><b>${money(i.sell*i.qty)}</b><br><button class="mini" onclick="removeCart(${idx})">Sil</button></div></div>`).join(''):'Sepet boş';
-  document.getElementById('cartTotal').textContent=money(cart.reduce((t,i)=>t+i.sell*i.qty,0));
-}
-function addByBarcode(code){
-  const p=products().find(x=>String(x.barcode)==String(code).trim());
-  if(!p){alert('Ürün bulunamadı. Ürünler ekranından ekleyebilirsiniz.');return}
-  if(Number(p.stock)<=0){alert('Bu ürün stokta yok.');return}
-  const c=cart.find(x=>x.id===p.id);
-  c?c.qty++:cart.push({...p,qty:1});
-  renderCart();
-}
-window.removeCart=i=>{cart.splice(i,1);renderCart()};
-function openScreen(target){
-  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.target===target));
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+target).classList.add('active');
-  const active=document.querySelector(`nav button[data-target="${target}"] span`)?.textContent||'Dashboard';
-  document.getElementById('pageTitle').textContent=active;
-  if(target==='sales') setTimeout(()=>document.getElementById('barcodeInput')?.focus(),100);
-}
-document.querySelectorAll('nav button,.nav-jump').forEach(b=>b.onclick=()=>openScreen(b.dataset.target));
-document.getElementById('barcodeInput').addEventListener('keydown',e=>{if(e.key==='Enter'){addByBarcode(e.target.value);e.target.value=''}});
-document.getElementById('globalSearch').addEventListener('input',e=>{
-  const q=e.target.value.toLowerCase().trim();
-  const ps=products().filter(p=>!q||p.name.toLowerCase().includes(q)||String(p.barcode).includes(q));
-  document.getElementById('productList').innerHTML=tableHtml(ps);
-  document.getElementById('stockTable').innerHTML=stockHtml(ps);
-});
-document.getElementById('saveProduct').onclick=()=>{
-  const p={id:crypto.randomUUID(),name:pName.value.trim(),barcode:pBarcode.value.trim(),buy:+pBuy.value,sell:+pSell.value,stock:+pStock.value,min:+pMin.value};
-  if(!p.name||!p.barcode||!p.sell)return alert('Ürün adı, barkod ve satış fiyatı zorunlu');
-  if(products().some(x=>String(x.barcode)===String(p.barcode)))return alert('Bu barkod zaten kayıtlı');
-  saveProducts([p,...products()]);
-  pName.value=pBarcode.value=pBuy.value=pSell.value=pStock.value=pMin.value='';
-  render();
+const seed = {
+  products:[
+    {id:1, barcode:'8690637891234', name:'Coca Cola 330 ml', cat:'İçecek', buy:15, sell:25, stock:48, min:10, unit:'Adet', supplier:'ABC Toptan', warehouse:'Ana Depo'},
+    {id:2, barcode:'8690789000011', name:'Su 0.5 L', cat:'İçecek', buy:3.5, sell:7.5, stock:120, min:30, unit:'Adet', supplier:'ABC Toptan', warehouse:'Ana Depo'},
+    {id:3, barcode:'8690504012345', name:'Ülker Çikolata', cat:'Atıştırmalık', buy:11, sell:18, stock:15, min:20, unit:'Adet', supplier:'Gıda Plus', warehouse:'Ana Depo'},
+    {id:4, barcode:'8690107001030', name:'Çaykur Çay 1 kg', cat:'Gıda', buy:105, sell:149, stock:40, min:50, unit:'Adet', supplier:'Gıda Plus', warehouse:'Ana Depo'},
+    {id:5, barcode:'8690536876542', name:'Bingo Deterjan 3 kg', cat:'Temizlik', buy:150, sell:199, stock:35, min:40, unit:'Adet', supplier:'Temiz Tedarik', warehouse:'Şube Depo'},
+    {id:6, barcode:'8001841250065', name:'Pantene Şampuan', cat:'Kozmetik', buy:88, sell:129, stock:60, min:15, unit:'Adet', supplier:'Kozmo Toptan', warehouse:'Ana Depo'}
+  ],
+  currents:[{name:'Ahmet Yılmaz', type:'Müşteri', phone:'05428888888', balance:750},{name:'Kutup Market', type:'Müşteri', phone:'03922222222', balance:1250}],
+  suppliers:[{name:'ABC Toptan', phone:'05421111111', balance:0},{name:'Gıda Plus', phone:'05423333333', balance:2200},{name:'Temiz Tedarik', phone:'05424444444', balance:900}],
+  staff:[{name:'Hüseyin Yıldız', role:'Yönetici', status:'Aktif'},{name:'Personel 1', role:'Kasiyer', status:'Aktif'}],
+  tx:[{time:'16:45', type:'Nakit Satış', amount:269.4},{time:'16:30', type:'Kart Satış', amount:450},{time:'16:15', type:'Cari Tahsilat', amount:750}]
 };
-document.getElementById('payBtn').onclick=()=>{
-  if(!cart.length)return alert('Sepet boş');
-  const ps=products();
-  for(const c of cart){const p=ps.find(x=>x.id===c.id); if(p && Number(p.stock)<c.qty) return alert(`${p.name} için stok yetersiz`)}
-  cart.forEach(c=>{const p=ps.find(x=>x.id===c.id);if(p)p.stock=Number(p.stock)-c.qty});
-  saveProducts(ps);
-  saveSales([...sales(),{date:new Date().toLocaleString('tr-TR'),total:cart.reduce((t,i)=>t+i.sell*i.qty,0),items:cart}]);
-  cart=[];
-  alert('Satış tamamlandı, stoktan düşüldü.');
-  render();
-};
-document.getElementById('clearCart').onclick=()=>{cart=[];renderCart()};
-document.getElementById('labelProduct').onchange=e=>{
-  const p=products().find(x=>x.id===e.target.value);
-  document.getElementById('labelPreview').innerHTML=p?`<b>${p.name}</b><span>${p.barcode}</span><div class="barcode">||||||||||||||||</div><strong>${money(p.sell)}</strong>`:'<b>StarPOS</b><span>Ürün seçiniz</span><div class="barcode">||||||||||||||||</div><strong>₺0,00</strong>';
-};
-document.getElementById('printLabel').onclick=()=>window.print();
-document.getElementById('clearData').onclick=()=>{if(confirm('Demo verileri silinsin mi?')){localStorage.removeItem(LS_PRODUCTS);localStorage.removeItem(LS_SALES);cart=[];seed();render()}};
-document.getElementById('cameraBtn').onclick=async()=>{cameraBox.classList.remove('hidden');try{video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})}catch(e){alert('Kamera açılamadı: '+e.message)}};
-document.getElementById('stopCamera').onclick=()=>{cameraBox.classList.add('hidden');if(video.srcObject)video.srcObject.getTracks().forEach(t=>t.stop())};
-let deferredPrompt;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.hidden=false});installBtn.onclick=()=>deferredPrompt?.prompt();
-if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
-seed();render();
+let db = JSON.parse(localStorage.getItem('starposERP')||'null') || seed;
+let cart = [];
+const fmt = n => '₺' + Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2});
+const save = () => localStorage.setItem('starposERP', JSON.stringify(db));
+
+function init(){renderMenu(); show('dashboard'); document.getElementById('globalSearch').oninput=e=>globalSearch(e.target.value); if('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});}
+function renderMenu(){const menu=document.getElementById('menu'); menu.innerHTML=menuGroups.map(g=>`<div class="menu-title">${g[0]}</div>${g[1].map(i=>`<button class="navbtn" data-page="${i[0]}" onclick="show('${i[0]}')"><b>${i[1]}</b><span>${i[2]}</span></button>`).join('')}`).join('');}
+function show(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.page===id)); const title=document.querySelector(`[data-page="${id}"] span`)?.textContent||'Dashboard'; document.getElementById('pageTitle').textContent=title; const map={dashboard, pos, products, stock, barcode, current, purchase, suppliers, warehouse, cash, staff, reports, settings}; map[id]();}
+function metrics(){const totalStock=db.products.reduce((a,p)=>a+p.stock,0); const low=db.products.filter(p=>p.stock<=p.min).length; const day=db.tx.filter(t=>t.type.includes('Satış')).reduce((a,t)=>a+t.amount,0); return {day, sales:db.tx.filter(t=>t.type.includes('Satış')).length, products:db.products.length,totalStock,low,cari:db.currents.reduce((a,c)=>a+c.balance,0)}}
+function metricCard(color,icon,title,value,sub){return `<div class="card metric"><div><h3>${title}</h3><strong>${value}</strong><p>${sub||''}</p></div><i class="${color}">${icon}</i></div>`}
+function dashboard(){const m=metrics(); document.getElementById('dashboard').innerHTML=`<div class="grid cards">${metricCard('green','₺','Günlük Satış',fmt(m.day),'Bugünkü kasa hareketi')}${metricCard('blue','🛒','Satış Adedi',m.sales,'Toplam satış')}${metricCard('orange','📦','Toplam Stok',m.totalStock,'Tüm depolar')}${metricCard('purple','👥','Cari Borç',fmt(m.cari),'Açık cari toplamı')}</div><div class="grid layout-2" style="margin-top:18px"><div class="card"><div class="section-title"><h2>Son İşlemler</h2><button class="btn secondary" onclick="show('reports')">Tümü</button></div>${txTable()}</div><div class="card"><div class="section-title"><h2>Düşük Stok Uyarıları</h2><button class="btn secondary" onclick="show('stock')">Stok</button></div>${lowStockTable()}</div></div><div class="grid layout-3" style="margin-top:18px"><div class="card"><h2>Hızlı İşlemler</h2><div class="quick-actions"><button class="btn" onclick="show('pos')">Satış Aç</button><button class="btn green" onclick="openProductForm()">Ürün Ekle</button><button class="btn orange" onclick="show('barcode')">Etiket Yazdır</button></div></div><div class="card"><h2>En Çok Satanlar</h2><table class="table"><tr><th>Ürün</th><th>Adet</th></tr><tr><td>Coca Cola 330 ml</td><td>48</td></tr><tr><td>Su 0.5 L</td><td>35</td></tr><tr><td>Ülker Çikolata</td><td>28</td></tr></table></div><div class="card"><h2>Sistem Durumu</h2><p><span class="badge">Local Demo</span> Firebase entegrasyonuna hazır.</p><p><span class="badge">PWA</span> GitHub Pages uyumlu.</p></div></div>`;}
+function txTable(){return `<table class="table"><tr><th>Saat</th><th>İşlem</th><th>Tutar</th></tr>${db.tx.map(t=>`<tr><td>${t.time}</td><td>${t.type}</td><td>${fmt(t.amount)}</td></tr>`).join('')}</table>`}
+function lowStockTable(){const rows=db.products.filter(p=>p.stock<=p.min); return `<table class="table"><tr><th>Ürün</th><th>Stok</th><th>Min</th></tr>${rows.map(p=>`<tr><td>${p.name}</td><td><span class="badge low">${p.stock}</span></td><td>${p.min}</td></tr>`).join('')||'<tr><td colspan="3">Düşük stok yok</td></tr>'}</table>`}
+function pos(){document.getElementById('pos').innerHTML=`<div class="pos-wrap"><div class="grid"><div class="card"><div class="section-title"><h2>🧾 Barkod Okut / Ürün Ekle</h2><button class="btn secondary" onclick="mockCamera()">📷 Kamera ile Oku</button></div><div style="display:grid;grid-template-columns:1fr 120px;gap:12px"><input id="barcodeInput" class="input" placeholder="Barkod okutun veya barkod numarası girin..." onkeydown="if(event.key==='Enter') scanBarcode(this.value)"><button class="btn" onclick="scanBarcode(document.getElementById('barcodeInput').value)">EKLE</button></div><div class="quick-actions" style="margin-top:12px"><button class="btn secondary">📡 Bluetooth Okuyucu Hazır</button><button class="btn secondary">⌨️ Manuel Giriş</button><button class="btn secondary" onclick="openProductForm()">➕ Yeni Ürün</button></div></div><div class="card"><div class="tabs">${['Tümü','İçecek','Gıda','Atıştırmalık','Temizlik','Kozmetik'].map((c,i)=>`<button class="tab ${i==0?'active':''}" onclick="filterProducts('${c}',this)">${c}</button>`).join('')}</div><div id="productGrid" class="product-grid"></div></div></div><div class="card"><div class="section-title"><h2>Sepet</h2><button class="btn red" onclick="cart=[];renderCart()">Temizle</button></div><div id="cart"></div></div></div>`; renderProductGrid('Tümü'); renderCart(); setTimeout(()=>document.getElementById('barcodeInput')?.focus(),100);}
+function renderProductGrid(cat){const list=cat==='Tümü'?db.products:db.products.filter(p=>p.cat===cat); document.getElementById('productGrid').innerHTML=list.map(p=>`<div class="product-card"><div class="product-img">${emoji(p.cat)}</div><b>${p.name}</b><small>${p.barcode}</small><small>Stok: ${p.stock}</small><div style="display:flex;justify-content:space-between;align-items:center"><strong>${fmt(p.sell)}</strong><button class="btn" onclick="addCart(${p.id})">+</button></div></div>`).join('')}
+function emoji(cat){return {İçecek:'🥤',Gıda:'🍵',Atıştırmalık:'🍫',Temizlik:'🧼',Kozmetik:'🧴'}[cat]||'📦'}
+function filterProducts(cat,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderProductGrid(cat)}
+function scanBarcode(code){code=String(code||'').trim(); if(!code)return; const p=db.products.find(x=>x.barcode===code); if(!p){alert('Ürün bulunamadı. Yeni ürün ekleme ekranı açılıyor.'); openProductForm(code); return;} addCart(p.id); document.getElementById('barcodeInput').value='';}
+function addCart(id){const p=db.products.find(x=>x.id===id); const c=cart.find(x=>x.id===id); if(c)c.qty++; else cart.push({...p,qty:1}); renderCart();}
+function renderCart(){const el=document.getElementById('cart'); if(!el)return; const sub=cart.reduce((a,c)=>a+c.sell*c.qty,0); const kdv=sub*.2; const total=sub+kdv; el.innerHTML=`${cart.map(c=>`<div class="cart-line"><div><b>${c.name}</b><br><small>${c.barcode}</small></div><input class="input" value="${c.qty}" onchange="setQty(${c.id},this.value)"><b>${fmt(c.sell*c.qty)}</b><button class="iconbtn" onclick="removeCart(${c.id})">×</button></div>`).join('')||'<p>Sepet boş</p>'}<div style="margin-top:18px;display:grid;gap:10px"><div>Ara Toplam <b style="float:right">${fmt(sub)}</b></div><div>KDV (%20) <b style="float:right">${fmt(kdv)}</b></div><div class="total">${fmt(total)}</div><div class="quick-actions"><button class="btn green">Nakit</button><button class="btn">Kart</button><button class="btn purple">Karma</button></div><button class="btn" onclick="completeSale()">ÖDEMEYİ TAMAMLA</button></div>`}
+function setQty(id,v){const c=cart.find(x=>x.id===id); if(c)c.qty=Math.max(1,Number(v)||1); renderCart()}
+function removeCart(id){cart=cart.filter(x=>x.id!==id); renderCart()}
+function completeSale(){if(!cart.length)return alert('Sepet boş'); cart.forEach(c=>{const p=db.products.find(x=>x.id===c.id); if(p)p.stock-=c.qty}); const sub=cart.reduce((a,c)=>a+c.sell*c.qty,0); db.tx.unshift({time:new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}),type:'Nakit Satış',amount:sub*1.2}); cart=[]; save(); alert('Satış tamamlandı, stoktan düşüldü.'); pos();}
+function products(){document.getElementById('products').innerHTML=`<div class="card"><div class="section-title"><h2>Ürün Yönetimi</h2><button class="btn" onclick="openProductForm()">+ Ürün Ekle</button></div>${productTable()}</div>`}
+function productTable(){return `<table class="table"><tr><th>Barkod</th><th>Ürün</th><th>Kategori</th><th>Alış</th><th>Satış</th><th>Stok</th><th>Kritik</th><th>İşlem</th></tr>${db.products.map(p=>`<tr><td>${p.barcode}</td><td>${p.name}</td><td>${p.cat}</td><td>${fmt(p.buy)}</td><td>${fmt(p.sell)}</td><td>${p.stock}</td><td>${p.min}</td><td><button class="btn secondary" onclick="openLabel(${p.id})">Etiket</button></td></tr>`).join('')}</table>`}
+function stock(){document.getElementById('stock').innerHTML=`<div class="grid layout-2"><div class="card"><div class="section-title"><h2>Stok Takibi</h2><button class="btn" onclick="stockMove()">Stok Hareketi</button></div>${productTable()}</div><div class="card"><h2>Kritik Stok</h2>${lowStockTable()}<br><h2>Depo Özeti</h2><table class="table"><tr><th>Depo</th><th>Ürün</th><th>Adet</th></tr><tr><td>Ana Depo</td><td>5</td><td>${db.products.filter(p=>p.warehouse==='Ana Depo').reduce((a,p)=>a+p.stock,0)}</td></tr><tr><td>Şube Depo</td><td>1</td><td>${db.products.filter(p=>p.warehouse==='Şube Depo').reduce((a,p)=>a+p.stock,0)}</td></tr></table></div></div>`}
+function barcode(){document.getElementById('barcode').innerHTML=`<div class="grid layout-2"><div class="card"><div class="section-title"><h2>Barkod / Fiyat Etiketi</h2><button class="btn" onclick="window.print()">Yazdır</button></div><select class="select" onchange="openLabel(Number(this.value))"><option>Ürün seçiniz</option>${db.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select><br><br><div class="label-preview print-area"><div><h2>StarPOS</h2><h3>Ürün seçiniz</h3><div class="barcode">||||||||||||</div><h1>₺0,00</h1></div></div></div><div class="card"><h2>Yazıcı Bağlantı Mantığı</h2><p>İlk sürümde tarayıcı yazdırma sistemi kullanılır. USB/Wi‑Fi/Bluetooth etiket yazıcı bilgisayarda normal yazıcı olarak seçilir.</p><table class="table"><tr><th>Yazıcı</th><th>Durum</th></tr><tr><td>Zebra / TSC</td><td><span class="badge">Uyumlu</span></td></tr><tr><td>XPrinter / Rongta</td><td><span class="badge">Uyumlu</span></td></tr><tr><td>40x30 / 58x40</td><td><span class="badge">Etiket Şablonu</span></td></tr></table></div></div>`}
+function current(){simpleModule('current','Cari Hesap Yönetimi','Müşteri / borç / alacak takibi',`<table class="table"><tr><th>Ad</th><th>Tür</th><th>Telefon</th><th>Bakiye</th></tr>${db.currents.map(c=>`<tr><td>${c.name}</td><td>${c.type}</td><td>${c.phone}</td><td>${fmt(c.balance)}</td></tr>`).join('')}</table>`)}
+function purchase(){simpleModule('purchase','Satın Alma','Tedarikçiden ürün girişi ve maliyet takibi',`<div class="form-grid"><input class="input" placeholder="Fatura No"><select class="select">${db.suppliers.map(s=>`<option>${s.name}</option>`)}</select><input class="input" placeholder="Tutar"><button class="btn">Satın Alma Kaydet</button></div><br><table class="table"><tr><th>Tarih</th><th>Tedarikçi</th><th>Tutar</th><th>Durum</th></tr><tr><td>Bugün</td><td>ABC Toptan</td><td>${fmt(1200)}</td><td><span class="badge">Taslak</span></td></tr></table>`)}
+function suppliers(){simpleModule('suppliers','Tedarikçiler','Ürün aldığın firmalar ve borç takibi',`<table class="table"><tr><th>Firma</th><th>Telefon</th><th>Bakiye</th></tr>${db.suppliers.map(s=>`<tr><td>${s.name}</td><td>${s.phone}</td><td>${fmt(s.balance)}</td></tr>`).join('')}</table>`)}
+function warehouse(){simpleModule('warehouse','Depo Yönetimi','Ana depo, şube depo ve transfer takibi',`<div class="quick-actions"><button class="btn">Depo Transferi</button><button class="btn green">Sayım Başlat</button><button class="btn orange">Depo Raporu</button></div><br><table class="table"><tr><th>Depo</th><th>Ürün Sayısı</th><th>Stok Adedi</th></tr><tr><td>Ana Depo</td><td>5</td><td>283</td></tr><tr><td>Şube Depo</td><td>1</td><td>35</td></tr></table>`)}
+function cash(){simpleModule('cash','Kasa Yönetimi','Nakit, kart, cari tahsilat ve gün sonu',`<div class="grid cards">${metricCard('green','₺','Nakit Kasa',fmt(3200),'Bugün')}${metricCard('blue','💳','Kart',fmt(4500),'Bugün')}${metricCard('purple','👥','Cari Tahsilat',fmt(750),'Bugün')}${metricCard('orange','🧾','Gider',fmt(350),'Bugün')}</div><br>${txTable()}`)}
+function staff(){simpleModule('staff','Personel Yönetimi','Yetki, kullanıcı ve kasiyer takibi',`<table class="table"><tr><th>Personel</th><th>Rol</th><th>Durum</th></tr>${db.staff.map(s=>`<tr><td>${s.name}</td><td>${s.role}</td><td><span class="badge">${s.status}</span></td></tr>`).join('')}</table>`)}
+function reports(){simpleModule('reports','Raporlar','Satış, stok, cari, kâr/zarar raporları',`<div class="tabs"><button class="tab active">Günlük</button><button class="tab">Aylık</button><button class="tab">Stok</button><button class="tab">Cari</button><button class="tab">Kâr/Zarar</button></div><div class="grid layout-2"><div>${txTable()}</div><div>${lowStockTable()}</div></div>`)}
+function settings(){simpleModule('settings','Ayarlar','Mağaza, yazıcı, yedekleme ve Firebase ayarları',`<div class="quick-actions"><button class="btn" onclick="exportData()">JSON Yedek Al</button><button class="btn orange" onclick="localStorage.removeItem('starposERP');location.reload()">Demo Veriye Dön</button><button class="btn secondary">Firebase Ayarla</button></div><br><table class="table"><tr><th>Ayar</th><th>Değer</th></tr><tr><td>Mağaza Adı</td><td>StarPOS Mağaza</td></tr><tr><td>Para Birimi</td><td>TRY</td></tr><tr><td>KDV</td><td>%20</td></tr><tr><td>Etiket</td><td>40x30 mm</td></tr></table>`)}
+function simpleModule(id,title,desc,body){document.getElementById(id).innerHTML=`<div class="card"><div class="section-title"><div><h2>${title}</h2><p>${desc}</p></div><button class="btn secondary">Dışa Aktar</button></div>${body}</div>`}
+function openProductForm(barcode=''){document.getElementById('modalBody').innerHTML=`<h2>Ürün Ekle / Güncelle</h2><div class="form-grid"><input id="pBarcode" class="input" placeholder="Barkod" value="${barcode}"><input id="pName" class="input" placeholder="Ürün Adı"><input id="pCat" class="input" placeholder="Kategori"><input id="pUnit" class="input" placeholder="Birim" value="Adet"><input id="pBuy" class="input" placeholder="Alış Fiyatı"><input id="pSell" class="input" placeholder="Satış Fiyatı"><input id="pStock" class="input" placeholder="Stok"><input id="pMin" class="input" placeholder="Kritik Stok"><input id="pSupplier" class="input" placeholder="Tedarikçi"><input id="pWarehouse" class="input" placeholder="Depo" value="Ana Depo"></div><br><button class="btn" onclick="saveProduct()">Kaydet</button>`; openModal();}
+function saveProduct(){const p={id:Date.now(), barcode:pBarcode.value, name:pName.value||'Yeni Ürün', cat:pCat.value||'Genel', unit:pUnit.value||'Adet', buy:Number(pBuy.value)||0, sell:Number(pSell.value)||0, stock:Number(pStock.value)||0, min:Number(pMin.value)||0, supplier:pSupplier.value||'', warehouse:pWarehouse.value||'Ana Depo'}; db.products.push(p); save(); closeModal(); show('products')}
+function openLabel(id){const p=db.products.find(x=>x.id===id); if(!p)return; document.getElementById('modalBody').innerHTML=`<h2>Fiyat Etiketi</h2><div class="label-preview print-area"><div><h2>${p.name}</h2><div class="barcode">||||||||||||||||</div><p>${p.barcode}</p><h1>${fmt(p.sell)}</h1></div></div><br><div class="quick-actions no-print"><button class="btn" onclick="window.print()">Yazdır</button><button class="btn secondary" onclick="closeModal()">Kapat</button></div>`; openModal();}
+function stockMove(){alert('Demo: Stok ekle/eksilt ve depo transferi modülü hazırlanmıştır. Bir sonraki sürümde kayıt formu genişletilir.');}
+function mockCamera(){alert('Kamera barkod okuma demo butonu. Gerçek sürümde BarcodeDetector / ZXing kütüphanesi bağlanır.'); scanBarcode('8690637891234')}
+function openModal(){document.getElementById('modal').classList.remove('hidden')} function closeModal(){document.getElementById('modal').classList.add('hidden')}
+function globalSearch(q){q=q.toLowerCase(); if(!q)return; const p=db.products.find(x=>x.name.toLowerCase().includes(q)||x.barcode.includes(q)); if(p){show('products')}}
+function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='starpos-erp-yedek.json'; a.click();}
+
+document.addEventListener('DOMContentLoaded', init);

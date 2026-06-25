@@ -1,143 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>StarPOS Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StarPOS ERP</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="logo">★</div>
-        <div>
-          <h1>StarPOS</h1>
-          <p>Web POS Panel</p>
-        </div>
-      </div>
-      <nav>
-        <button data-target="dashboard" class="active">🏠 <span>Dashboard</span></button>
-        <button data-target="sales">🛒 <span>Satış Ekranı</span></button>
-        <button data-target="products">📦 <span>Ürünler</span></button>
-        <button data-target="stock">📋 <span>Stok Takibi</span></button>
-        <button data-target="label">🏷️ <span>Barkod / Etiket</span></button>
-        <button data-target="reports">📊 <span>Raporlar</span></button>
-      </nav>
-      <div class="side-card">
-        <b>Demo Sürüm</b>
-        <small>Firebase bağlanmadan localStorage ile çalışır.</small>
-      </div>
-    </aside>
+  <aside class="sidebar">
+    <div class="brand"><div class="logo">★</div><div><h1>StarPOS</h1><span>ERP Yönetim Sistemi</span></div></div>
+    <nav id="menu"></nav>
+    <div class="side-footer">StarPOS ERP v1.0<br><small>POS • Stok • Cari • Depo</small></div>
+  </aside>
 
-    <main class="workspace">
-      <header class="topbar">
-        <div>
-          <h2 id="pageTitle">Dashboard</h2>
-          <p>Satış, stok, barkod ve fiyat etiketi yönetimi</p>
-        </div>
-        <div class="top-actions">
-          <input id="globalSearch" placeholder="Ürün, barkod veya stok ara..." />
-          <button id="installBtn" hidden>Uygulama Kur</button>
-        </div>
-      </header>
+  <main class="main">
+    <header class="topbar">
+      <div><button id="collapseBtn" class="iconbtn">☰</button><span id="pageTitle">Dashboard</span></div>
+      <div class="global-search"><span>🔎</span><input id="globalSearch" placeholder="Ürün, barkod, cari veya işlem ara..." /></div>
+      <div class="userbox"><span>Yönetici</span><b>HY</b></div>
+    </header>
 
-      <section class="cards">
-        <div class="card green"><span>Günlük Satış</span><b id="dailyTotal">₺0,00</b></div>
-        <div class="card blue"><span>Satış Adedi</span><b id="saleCount">0</b></div>
-        <div class="card purple"><span>Toplam Ürün</span><b id="productCount">0</b></div>
-        <div class="card orange"><span>Düşük Stok</span><b id="lowStock">0</b></div>
-      </section>
+    <section id="dashboard" class="page active"></section>
+    <section id="pos" class="page"></section>
+    <section id="products" class="page"></section>
+    <section id="stock" class="page"></section>
+    <section id="barcode" class="page"></section>
+    <section id="current" class="page"></section>
+    <section id="purchase" class="page"></section>
+    <section id="suppliers" class="page"></section>
+    <section id="warehouse" class="page"></section>
+    <section id="cash" class="page"></section>
+    <section id="staff" class="page"></section>
+    <section id="reports" class="page"></section>
+    <section id="settings" class="page"></section>
+  </main>
 
-      <section id="screen-dashboard" class="screen active">
-        <div class="grid two">
-          <div class="panel">
-            <div class="panel-head"><h3>Son Satışlar</h3><button data-target="sales" class="mini nav-jump">Satışa Git</button></div>
-            <div id="lastOps" class="empty">Henüz işlem yok</div>
-          </div>
-          <div class="panel">
-            <div class="panel-head"><h3>Kritik Stok Uyarıları</h3><button data-target="stock" class="mini nav-jump">Stokları Aç</button></div>
-            <div id="criticalList" class="empty">Kritik ürün yok</div>
-          </div>
-        </div>
-      </section>
-
-      <section id="screen-sales" class="screen">
-        <div class="sales-layout">
-          <div class="panel pos-panel">
-            <h3>Satış Barkod Alanı</h3>
-            <div class="scanbar">
-              <input id="barcodeInput" autofocus placeholder="Barkod okut / yaz ve Enter'a bas" />
-              <button id="cameraBtn">📷 Kamera</button>
-            </div>
-            <div id="cameraBox" class="camera hidden">
-              <video id="video" autoplay playsinline></video>
-              <button id="stopCamera">Kapat</button>
-              <small>Kamera demo alanıdır. Kamera barkod kütüphanesi sonraki sürümde aktif edilir.</small>
-            </div>
-            <h3>Hızlı Ürün Listesi</h3>
-            <div id="quickProducts" class="quick-grid"></div>
-          </div>
-          <div class="panel cart-panel">
-            <h3>Sepet</h3>
-            <div id="cartList" class="empty">Sepet boş</div>
-            <div class="total"><span>Toplam</span><b id="cartTotal">₺0,00</b></div>
-            <div class="pay-grid">
-              <button id="payBtn" class="primary">Ödeme Al</button>
-              <button id="clearCart" class="secondary">Sepeti Temizle</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="screen-products" class="screen">
-        <div class="grid form-list">
-          <div class="panel">
-            <h3>Yeni Ürün Ekle</h3>
-            <input id="pName" placeholder="Ürün adı" />
-            <input id="pBarcode" placeholder="Barkod" />
-            <div class="grid two compact"><input id="pBuy" type="number" placeholder="Alış fiyatı" /><input id="pSell" type="number" placeholder="Satış fiyatı" /></div>
-            <div class="grid two compact"><input id="pStock" type="number" placeholder="Stok" /><input id="pMin" type="number" placeholder="Kritik stok" /></div>
-            <button id="saveProduct" class="primary">Ürün Kaydet</button>
-          </div>
-          <div class="panel">
-            <h3>Ürün Tablosu</h3>
-            <div id="productList" class="table-wrap"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="screen-stock" class="screen">
-        <div class="panel">
-          <h3>Stok Takibi</h3>
-          <div id="stockTable" class="table-wrap"></div>
-        </div>
-      </section>
-
-      <section id="screen-label" class="screen">
-        <div class="grid two">
-          <div class="panel">
-            <h3>Etiket Oluştur</h3>
-            <select id="labelProduct"></select>
-            <button id="printLabel" class="primary">Fiyat Etiketi Yazdır</button>
-            <p class="hint">İlk sürüm tarayıcı yazdırma sistemi ile çalışır. USB / Bluetooth / Wi‑Fi etiket yazıcılar bilgisayarda yazıcı olarak seçilir.</p>
-          </div>
-          <div class="panel preview-panel">
-            <h3>Etiket Önizleme</h3>
-            <div class="label-preview" id="labelPreview"><b>StarPOS</b><span>Ürün seçiniz</span><div class="barcode">||||||||||||||||</div><strong>₺0,00</strong></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="screen-reports" class="screen">
-        <div class="grid two">
-          <div class="panel"><h3>Rapor Özeti</h3><div id="reportBox"></div></div>
-          <div class="panel"><h3>Ayarlar</h3><button id="clearData" class="danger">Demo Verilerini Sil</button></div>
-        </div>
-      </section>
-    </main>
-  </div>
+  <div id="modal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
   <script src="app.js"></script>
 </body>
 </html>

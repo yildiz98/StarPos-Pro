@@ -1,3 +1,3 @@
-// StarPOS v1 demo şu an localStorage ile çalışır.
-// Firebase eklemek için config bilgilerini buraya koyacağız.
+// StarPOS ERP Firebase bağlantısı için hazır alan.
+// Kendi Firebase config bilgilerini buraya ekleyebilirsin.
 const firebaseConfig = {};
