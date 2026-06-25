@@ -3,39 +3,40 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StarPOS Universal ERP</title>
+  <title>StarPOS Fashion ERP</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">★</div><div><h1>StarPOS</h1><p>Universal ERP</p></div></div>
+    <div class="brand"><div class="logo">★</div><div><h1>StarPOS</h1><p>Fashion ERP</p></div></div>
     <nav id="menu"></nav>
-    <div class="version">StarPOS Universal v1.0<br><span>Sektör bağımsız POS/ERP</span></div>
+    <div class="version">StarPOS Fashion v1.0<br><span>Giyim butik odaklı ERP/POS</span></div>
   </aside>
 
   <main class="app">
     <header class="topbar">
       <div>
         <h2 id="pageTitle">Dashboard</h2>
-        <p id="pageSub">Market, giyim, kafe, servis ve tüm işletmeler için tek sistem.</p>
+        <p id="pageSub">Giyim butikleri için renk, beden, varyant, stok, barkod ve satış yönetimi.</p>
       </div>
       <div class="topActions">
-        <input id="globalSearch" placeholder="Ürün, barkod, müşteri veya kategori ara..." />
-        <select id="sectorSelect" title="İşletme türü"></select>
-        <button class="primary" onclick="openModal('productModal')">+ Ürün</button>
+        <input id="globalSearch" placeholder="Barkod, ürün, marka, renk, beden ara..." oninput="filterProducts(this.value)" />
+        <button onclick="openModal('variantModal')">+ Varyant</button>
+        <button class="primary" onclick="openModal('productModal')">+ Ürün Modeli</button>
       </div>
     </header>
 
     <section id="dashboard" class="page active"></section>
     <section id="pos" class="page"></section>
     <section id="products" class="page"></section>
+    <section id="variants" class="page"></section>
     <section id="stock" class="page"></section>
     <section id="barcode" class="page"></section>
     <section id="customers" class="page"></section>
+    <section id="campaigns" class="page"></section>
     <section id="purchase" class="page"></section>
     <section id="suppliers" class="page"></section>
-    <section id="warehouse" class="page"></section>
     <section id="cash" class="page"></section>
     <section id="staff" class="page"></section>
     <section id="reports" class="page"></section>
@@ -44,31 +45,45 @@
 
   <div id="productModal" class="modal">
     <div class="modalCard large">
-      <div class="modalHead"><h3>Ürün Ekle / Güncelle</h3><button onclick="closeModal('productModal')">×</button></div>
+      <div class="modalHead"><h3>Ürün Modeli Ekle / Güncelle</h3><button onclick="closeModal('productModal')">×</button></div>
       <div class="formGrid">
-        <label>Barkod<input id="pBarcode" placeholder="869... veya manuel kod" /></label>
-        <label>Ürün Adı<input id="pName" placeholder="Ürün adı" /></label>
-        <label>Kategori<input id="pCategory" placeholder="İçecek, Giyim, Servis..." /></label>
-        <label>Marka<input id="pBrand" placeholder="Marka" /></label>
+        <label>Model Kodu<input id="pCode" placeholder="TSH-001" /></label>
+        <label>Ürün Adı<input id="pName" placeholder="Oversize T-Shirt" /></label>
+        <label>Marka<input id="pBrand" placeholder="Star Wear" /></label>
+        <label>Kategori<select id="pCategory"><option>Üst Giyim</option><option>Alt Giyim</option><option>Elbise</option><option>Ayakkabı</option><option>Çanta</option><option>Aksesuar</option><option>İç Giyim</option><option>Dış Giyim</option></select></label>
+        <label>Sezon<select id="pSeason"><option>2026 Yaz</option><option>2026 Kış</option><option>2026 İlkbahar</option><option>2026 Sonbahar</option><option>Basic</option></select></label>
+        <label>Koleksiyon<input id="pCollection" placeholder="Yeni Sezon / Basic / Outlet" /></label>
         <label>Alış Fiyatı<input id="pBuy" type="number" step="0.01" /></label>
         <label>Satış Fiyatı<input id="pSell" type="number" step="0.01" /></label>
-        <label>Stok<input id="pStock" type="number" /></label>
-        <label>Kritik Stok<input id="pMin" type="number" /></label>
-        <label>Birim<select id="pUnit"><option>Adet</option><option>Kg</option><option>Litre</option><option>Metre</option><option>Paket</option><option>Hizmet</option></select></label>
-        <label>KDV %<input id="pTax" type="number" value="20" /></label>
       </div>
-      <div id="sectorFields" class="sectorFields"></div>
-      <div class="modalActions"><button onclick="closeModal('productModal')">İptal</button><button class="primary" onclick="saveProduct()">Kaydet</button></div>
+      <div class="modalActions"><button onclick="closeModal('productModal')">İptal</button><button class="primary" onclick="saveProductModel()">Kaydet</button></div>
+    </div>
+  </div>
+
+  <div id="variantModal" class="modal">
+    <div class="modalCard large">
+      <div class="modalHead"><h3>Renk / Beden Varyantı Ekle</h3><button onclick="closeModal('variantModal')">×</button></div>
+      <div class="formGrid">
+        <label>Ürün Modeli<select id="vModel"></select></label>
+        <label>Barkod<input id="vBarcode" placeholder="Otomatik veya okutulan barkod" /></label>
+        <label>Renk<input id="vColor" placeholder="Siyah" /></label>
+        <label>Beden<select id="vSize"><option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option><option>XXL</option><option>36</option><option>38</option><option>40</option><option>42</option><option>44</option></select></label>
+        <label>Stok<input id="vStock" type="number" /></label>
+        <label>Kritik Stok<input id="vMin" type="number" value="3" /></label>
+        <label>Raf / Lokasyon<input id="vLocation" placeholder="A1 Rafı" /></label>
+        <label>Özel Fiyat<input id="vPrice" type="number" step="0.01" placeholder="Boş kalırsa model fiyatı" /></label>
+      </div>
+      <div class="modalActions"><button onclick="closeModal('variantModal')">İptal</button><button class="primary" onclick="saveVariant()">Kaydet</button></div>
     </div>
   </div>
 
   <div id="labelModal" class="modal">
     <div class="modalCard">
-      <div class="modalHead"><h3>Fiyat Etiketi</h3><button onclick="closeModal('labelModal')">×</button></div>
+      <div class="modalHead"><h3>Fiyat / Barkod Etiketi</h3><button onclick="closeModal('labelModal')">×</button></div>
       <div id="labelPreview" class="labelPreview"></div>
       <div class="formGrid one">
-        <label>Etiket Boyutu<select id="labelSize"><option>40x30 mm</option><option>58x40 mm</option><option>100x50 mm</option></select></label>
-        <label>Yazıcı Türü<select><option>Tarayıcı Yazdırma</option><option>Zebra / ZPL</option><option>TSC / TSPL</option><option>XPrinter</option></select></label>
+        <label>Etiket Boyutu<select><option>40x30 mm</option><option>58x40 mm</option><option>100x50 mm</option></select></label>
+        <label>Yazıcı<select><option>Tarayıcı Yazdırma</option><option>Zebra / ZPL</option><option>TSC / TSPL</option><option>XPrinter</option></select></label>
       </div>
       <div class="modalActions"><button onclick="closeModal('labelModal')">Kapat</button><button class="primary" onclick="window.print()">Yazdır</button></div>
     </div>

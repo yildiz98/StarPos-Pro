@@ -1,27 +1,25 @@
-# StarPOS Universal ERP v1
+# StarPOS Fashion ERP v1.0
 
-Sektör bağımsız POS / ERP demo sürümü.
+Giyim butikleri için web odaklı ERP/POS demo sürümü.
 
 ## Modüller
-
-- POS satış ekranı
-- Stok takibi
-- Barkod ve fiyat etiketi
-- Cari hesap
+- Satış POS
+- Ürün modelleri
+- Renk / beden varyantları
+- Barkod okutma mantığı
+- Fiyat / barkod etiketi yazdırma
+- Stok & sayım
+- Müşteri sadakat
+- Kampanya
 - Satın alma
-- Tedarikçi yönetimi
-- Depo yönetimi
+- Tedarikçi
 - Kasa
 - Personel
 - Raporlar
-- Sektör eklentileri
 
-## Sektör Eklentileri
+## Yayınlama
+GitHub repository içine dosyaları yükleyin.
+Settings > Pages > Deploy from branch > main / root seçin.
 
-Market, giyim, kafe/restoran, telefoncu/elektronik, oto yedek parça, servis/teknik servis, kuyumcu, eczane/medikal, pet shop ve genel işletme.
-
-## Çalıştırma
-
-Dosyaları GitHub repository içine yükleyin. GitHub Pages ayarını `main / root` yapın.
-
-Demo veriler tarayıcı `localStorage` içinde saklanır. Firebase entegrasyonu için `firebase-config.js` hazır bırakılmıştır.
+## Not
+Bu demo localStorage ile çalışır. Firebase bulut bağlantısı sonraki sürümde `firebase-config.js` üzerinden aktif edilebilir.
