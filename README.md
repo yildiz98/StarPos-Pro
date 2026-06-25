@@ -1,23 +1,27 @@
-# ⭐ StarPOS ERP v1.0 Demo
+# StarPOS Universal ERP v1
 
-Web odaklı POS + ERP demo sürümü.
+Sektör bağımsız POS / ERP demo sürümü.
 
 ## Modüller
-- POS Satış
-- Stok Takibi
-- Barkod Okutma
-- Fiyat Etiketi Yazdırma
-- Cari Hesap
-- Satın Alma
-- Tedarikçi
-- Depo Yönetimi
+
+- POS satış ekranı
+- Stok takibi
+- Barkod ve fiyat etiketi
+- Cari hesap
+- Satın alma
+- Tedarikçi yönetimi
+- Depo yönetimi
 - Kasa
 - Personel
 - Raporlar
-- Ayarlar / Yedekleme
+- Sektör eklentileri
 
-## Kurulum
-Dosyaları GitHub repository içine yükle. GitHub Pages: `Settings > Pages > main / root`.
+## Sektör Eklentileri
 
-## Not
-Bu sürüm demo olarak localStorage kullanır. Firebase entegrasyonuna hazırdır.
+Market, giyim, kafe/restoran, telefoncu/elektronik, oto yedek parça, servis/teknik servis, kuyumcu, eczane/medikal, pet shop ve genel işletme.
+
+## Çalıştırma
+
+Dosyaları GitHub repository içine yükleyin. GitHub Pages ayarını `main / root` yapın.
+
+Demo veriler tarayıcı `localStorage` içinde saklanır. Firebase entegrasyonu için `firebase-config.js` hazır bırakılmıştır.

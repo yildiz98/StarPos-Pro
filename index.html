@@ -3,22 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StarPOS ERP</title>
+  <title>StarPOS Universal ERP</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand"><div class="logo">★</div><div><h1>StarPOS</h1><span>ERP Yönetim Sistemi</span></div></div>
+    <div class="brand"><div class="logo">★</div><div><h1>StarPOS</h1><p>Universal ERP</p></div></div>
     <nav id="menu"></nav>
-    <div class="side-footer">StarPOS ERP v1.0<br><small>POS • Stok • Cari • Depo</small></div>
+    <div class="version">StarPOS Universal v1.0<br><span>Sektör bağımsız POS/ERP</span></div>
   </aside>
 
-  <main class="main">
+  <main class="app">
     <header class="topbar">
-      <div><button id="collapseBtn" class="iconbtn">☰</button><span id="pageTitle">Dashboard</span></div>
-      <div class="global-search"><span>🔎</span><input id="globalSearch" placeholder="Ürün, barkod, cari veya işlem ara..." /></div>
-      <div class="userbox"><span>Yönetici</span><b>HY</b></div>
+      <div>
+        <h2 id="pageTitle">Dashboard</h2>
+        <p id="pageSub">Market, giyim, kafe, servis ve tüm işletmeler için tek sistem.</p>
+      </div>
+      <div class="topActions">
+        <input id="globalSearch" placeholder="Ürün, barkod, müşteri veya kategori ara..." />
+        <select id="sectorSelect" title="İşletme türü"></select>
+        <button class="primary" onclick="openModal('productModal')">+ Ürün</button>
+      </div>
     </header>
 
     <section id="dashboard" class="page active"></section>
@@ -26,7 +32,7 @@
     <section id="products" class="page"></section>
     <section id="stock" class="page"></section>
     <section id="barcode" class="page"></section>
-    <section id="current" class="page"></section>
+    <section id="customers" class="page"></section>
     <section id="purchase" class="page"></section>
     <section id="suppliers" class="page"></section>
     <section id="warehouse" class="page"></section>
@@ -36,7 +42,38 @@
     <section id="settings" class="page"></section>
   </main>
 
-  <div id="modal" class="modal hidden"><div class="modal-card"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
+  <div id="productModal" class="modal">
+    <div class="modalCard large">
+      <div class="modalHead"><h3>Ürün Ekle / Güncelle</h3><button onclick="closeModal('productModal')">×</button></div>
+      <div class="formGrid">
+        <label>Barkod<input id="pBarcode" placeholder="869... veya manuel kod" /></label>
+        <label>Ürün Adı<input id="pName" placeholder="Ürün adı" /></label>
+        <label>Kategori<input id="pCategory" placeholder="İçecek, Giyim, Servis..." /></label>
+        <label>Marka<input id="pBrand" placeholder="Marka" /></label>
+        <label>Alış Fiyatı<input id="pBuy" type="number" step="0.01" /></label>
+        <label>Satış Fiyatı<input id="pSell" type="number" step="0.01" /></label>
+        <label>Stok<input id="pStock" type="number" /></label>
+        <label>Kritik Stok<input id="pMin" type="number" /></label>
+        <label>Birim<select id="pUnit"><option>Adet</option><option>Kg</option><option>Litre</option><option>Metre</option><option>Paket</option><option>Hizmet</option></select></label>
+        <label>KDV %<input id="pTax" type="number" value="20" /></label>
+      </div>
+      <div id="sectorFields" class="sectorFields"></div>
+      <div class="modalActions"><button onclick="closeModal('productModal')">İptal</button><button class="primary" onclick="saveProduct()">Kaydet</button></div>
+    </div>
+  </div>
+
+  <div id="labelModal" class="modal">
+    <div class="modalCard">
+      <div class="modalHead"><h3>Fiyat Etiketi</h3><button onclick="closeModal('labelModal')">×</button></div>
+      <div id="labelPreview" class="labelPreview"></div>
+      <div class="formGrid one">
+        <label>Etiket Boyutu<select id="labelSize"><option>40x30 mm</option><option>58x40 mm</option><option>100x50 mm</option></select></label>
+        <label>Yazıcı Türü<select><option>Tarayıcı Yazdırma</option><option>Zebra / ZPL</option><option>TSC / TSPL</option><option>XPrinter</option></select></label>
+      </div>
+      <div class="modalActions"><button onclick="closeModal('labelModal')">Kapat</button><button class="primary" onclick="window.print()">Yazdır</button></div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>
